@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+<<<<<<< HEAD
   <title>Motu Patlu 3D - Finally Working!</title>
   <style>
     body { margin:0; background:#87CEEB; overflow:hidden; font-family:sans-serif; }
@@ -10,19 +11,37 @@
     #info { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); color:white; padding:15px 20px; border-radius:15px; z-index:100; }
     button { margin-top:10px; padding:12px 24px; background:#ff5722; color:white; border:none; border-radius:10px; cursor:pointer; font-size:16px; font-weight:bold; }
     button:hover { background:#e64a19; }
+=======
+  <title>Motu Patlu 3D</title>
+  <style>
+    body{margin:0;background:#87CEEB;overflow:hidden;font-family:sans-serif}
+    canvas{display:block}
+    #info{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);color:white;padding:15px 20px;border-radius:15px;z-index:100}
+    button{margin-top:10px;padding:12px 24px;background:#ff5722;color:white;border:none;border-radius:10px;cursor:pointer;font-size:16px;font-weight:bold}
+    button:hover{background:#e64a19}
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
   </style>
 </head>
 <body>
   <div id="info">
     <h2>Motu Patlu 3D</h2>
+<<<<<<< HEAD
     <p>Mouse drag = rotate • Scroll = zoom • Double click = reset</p>
+=======
+    <p>Drag → Rotate | Scroll → Zoom | Double-click → Reset</p>
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
     <button id="colorBtn">Random Color</button>
   </div>
 
   <script type="module">
+<<<<<<< HEAD
     // Sirf three.module.js local se, baaki CDN se (kabhi error nahi aayega)
     import * as THREE from './three.module.js';
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/controls/OrbitControls.js';
+=======
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.168.0  /examples/jsm/controls/OrbitControls.js';
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
     import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/loaders/GLTFLoader.js';
 
     const scene = new THREE.Scene();
@@ -35,17 +54,25 @@
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(devicePixelRatio);
     renderer.shadowMap.enabled = true;
+<<<<<<< HEAD
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
     // Lights
+=======
+    document.body.appendChild(renderer.domElement);
+
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
     scene.add(new THREE.AmbientLight(0xffffff, 0.8));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
     dirLight.position.set(5, 10, 7);
     dirLight.castShadow = true;
     scene.add(dirLight);
 
+<<<<<<< HEAD
     // Ground
+=======
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
     const ground = new THREE.Mesh(
       new THREE.CircleGeometry(15, 64),
       new THREE.MeshStandardMaterial({ color: 0xcccccc })
@@ -54,11 +81,15 @@
     ground.receiveShadow = true;
     scene.add(ground);
 
+<<<<<<< HEAD
     // Controls
+=======
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.target.set(0, 1, 0);
 
+<<<<<<< HEAD
     // Load Motu Patlu
     const loader = new GLTFLoader();
     let motuPatlu;
@@ -90,11 +121,37 @@
         if (c.isMesh && c.material) {
           const mats = Array.isArray(c.material) ? c.material : [c.material];
           mats.forEach(m => m.color && m.color.setHex(Math.random() * 0xffffff));
+=======
+    const loader = new GLTFLoader();
+    let motuPatlu;
+
+    loader.load('motu_patlu.glb', gltf => {   // yahan ./ nahi lagaya kyunki root mein hai
+      motuPatlu = gltf.scene;
+      motuPatlu.traverse(c => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
+
+      const box = new THREE.Box3().setFromObject(motuPatlu);
+      const scale = 3 / Math.max(...box.getSize(new THREE.Vector3()).toArray());
+      motuPatlu.scale.setScalar(scale);
+      motuPatlu.position.y = -box.min.y * scale;
+
+      scene.add(motuPatlu);
+    });
+
+    document.getElementById('colorBtn').onclick = () => {
+      if (!motuPatlu) return;
+      motuPatlu.traverse(c => {
+        if (c.isMesh && c.material) {
+          const mats = Array.isArray(c.material) ? c.material : [c.material];
+          mats.forEach(m => m.color?.setHex(Math.random() * 0xffffff));
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
         }
       });
     };
 
+<<<<<<< HEAD
     // Animation
+=======
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
     function animate() {
       requestAnimationFrame(animate);
       if (motuPatlu) motuPatlu.rotation.y += 0.003;
@@ -103,12 +160,16 @@
     }
     animate();
 
+<<<<<<< HEAD
     // Resize & Reset
+=======
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
     window.onresize = () => {
       camera.aspect = innerWidth/innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     };
+<<<<<<< HEAD
 
     renderer.domElement.ondblclick = () => {
       controls.reset();
@@ -117,3 +178,8 @@
   </script>
 </body>
 </html>
+=======
+  </script>
+</body>
+</html>
+>>>>>>> 226db252c968b59a21e6803bdfaea60310f7ba92
