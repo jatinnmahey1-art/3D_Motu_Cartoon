@@ -20,10 +20,9 @@
   </div>
 
   <script type="module">
-    // Tere repo ke local files use kar rahe hain
-    import * as THREE from './three.module.js';
-    import { OrbitControls } from './OrbitControls.js';
-    import { GLTFLoader } from './GLTFLoader.js';
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/controls/OrbitControls.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/loaders/GLTFLoader.js';
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
@@ -58,7 +57,7 @@
     const loader = new GLTFLoader();
     let motuPatlu;
 
-    loader.load('./motu_patlu.glb', gltf => {
+    loader.load('motu_patlu.glb', gltf => {
       motuPatlu = gltf.scene;
       motuPatlu.traverse(c => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
 
