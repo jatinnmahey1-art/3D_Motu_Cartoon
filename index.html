@@ -7,7 +7,7 @@
   <style>
     body{margin:0;background:#87CEEB;overflow:hidden;font-family:sans-serif}
     canvas{display:block}
-    #info{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);color:white;padding:15px 20px;border-radius:15px;z-index:100;max-width:300px}
+    #info{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);color:white;padding:15px 20px;border-radius:15px;z-index:100}
     button{margin-top:10px;padding:12px 24px;background:#ff5722;color:white;border:none;border-radius:10px;cursor:pointer;font-size:16px;font-weight:bold}
     button:hover{background:#e64a19}
   </style>
@@ -20,9 +20,10 @@
   </div>
 
   <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js';
-    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/controls/OrbitControls.js';
-    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/loaders/GLTFLoader.js';
+    // Tere repo ke local files use kar rahe hain
+    import * as THREE from './three.module.js';
+    import { OrbitControls } from './OrbitControls.js';
+    import { GLTFLoader } from './GLTFLoader.js';
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
@@ -57,7 +58,7 @@
     const loader = new GLTFLoader();
     let motuPatlu;
 
-    loader.load('motu_patlu.glb', gltf => {
+    loader.load('./motu_patlu.glb', gltf => {
       motuPatlu = gltf.scene;
       motuPatlu.traverse(c => { if (c.isMesh) c.castShadow = c.receiveShadow = true; });
 
