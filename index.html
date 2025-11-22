@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Motu Patlu 3D - Finally Working!</title>
+  <style>
+    body { margin:0; background:#87CEEB; overflow:hidden; font-family:sans-serif; }
+    canvas { display:block; }
+    #info { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); color:white; padding:15px 20px; border-radius:15px; z-index:100; }
+    button { margin-top:10px; padding:12px 24px; background:#ff5722; color:white; border:none; border-radius:10px; cursor:pointer; font-size:16px; font-weight:bold; }
+    button:hover { background:#e64a19; }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h2>Motu Patlu 3D</h2>
+    <p>Mouse drag = rotate • Scroll = zoom • Double click = reset</p>
+    <button id="colorBtn">Random Color</button>
+  </div>
+
+  <script type="module">
+    // Sirf three.module.js local se, baaki CDN se (kabhi error nahi aayega)
+    import * as THREE from './three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/controls/OrbitControls.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/loaders/GLTFLoader.js';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
+    camera.position.set(0, 1.8, 5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.body.appendChild(renderer.domElement);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(5, 10, 7);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // Ground
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(15, 64),
+      new THREE.MeshStandardMaterial({ color: 0xcccccc })
+    );
+    ground.rotation.x = -Math.PI/2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 1, 0);
+
+    // Load Motu Patlu
+    const loader = new GLTFLoader();
+    let motuPatlu;
+
+    loader.load('./motu_patlu.glb', (gltf) => {
+      motuPatlu = gltf.scene;
+      motuPatlu.traverse(c => {
+        if (c.isMesh) {
+          c.castShadow = true;
+          c.receiveShadow = true;
+        }
+      });
+
+      // Auto fit
+      const box = new THREE.Box3().setFromObject(motuPatlu);
+      const size = box.getSize(new THREE.Vector3());
+      const scale = 3 / Math.max(size.x, size.y, size.z);
+      motuPatlu.scale.set(scale, scale, scale);
+      motuPatlu.position.y = -box.min.y * scale;
+
+      scene.add(motuPatlu);
+      console.log("Motu Patlu loaded!");
+    });
+
+    // Random Color
+    document.getElementById('colorBtn').onclick = () => {
+      if (!motuPatlu) return alert("Model load ho raha hai...");
+      motuPatlu.traverse(c => {
+        if (c.isMesh && c.material) {
+          const mats = Array.isArray(c.material) ? c.material : [c.material];
+          mats.forEach(m => m.color && m.color.setHex(Math.random() * 0xffffff));
+        }
+      });
+    };
+
+    // Animation
+    function animate() {
+      requestAnimationFrame(animate);
+      if (motuPatlu) motuPatlu.rotation.y += 0.003;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Resize & Reset
+    window.onresize = () => {
+      camera.aspect = innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    };
+
+    renderer.domElement.ondblclick = () => {
+      controls.reset();
+      camera.position.set(0, 1.8, 5);
+    };
+  </script>
+</body>
+</html>
