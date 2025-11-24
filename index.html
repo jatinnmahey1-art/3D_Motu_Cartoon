@@ -1,9 +1,9 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Motu Patlu 3D - Fixed Load</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Motu Patlu 3D - Ultimate Experience</title>
   <script type="importmap">
   {
     "imports": {
@@ -13,130 +13,281 @@
   }
   </script>
   <style>
-    body{margin:0;background:#87CEEB;overflow:hidden;font-family:sans-serif}
-    canvas{display:block}
-    #info{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);color:white;padding:15px 20px;border-radius:15px;z-index:100}
-    button{margin-top:10px;padding:12px 24px;background:#ff5722;color:white;border:none;border-radius:10px;cursor:pointer;font-size:16px;font-weight:bold}
-    button:hover{background:#e64a19}
-    #loading {position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:18px;}
+    body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Google Sans', sans-serif; touch-action: none; }
+    canvas { display: block; }
+    #ui {
+      position: absolute; top: 0; left: 0; width: 100%; padding: 15px; box-sizing: border-box;
+      display: flex; justify-content: space-between; align-items: flex-start; z-index: 100;
+      pointer-events: none;
+    }
+    #info {
+      background: rgba(0,0,0,0.7); color: white; padding: 15px 20px; border-radius: 20px;
+      backdrop-filter: blur(10px); pointer-events: auto; max-width: 300px;
+    }
+    #controls {
+      display: flex; gap: 10px; pointer-events: auto;
+    }
+    button {
+      padding: 12px 18px; background: #ff5722; color: white; border: none; border-radius: 50px;
+      cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: all 0.3s; backdrop-filter: blur(10px);
+    }
+    button:hover { transform: translateY(-3px); background: #e64a19; }
+    button:active { transform: translateY(1px); }
+    #progressContainer {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 300px; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 20px;
+      text-align: center; color: white; font-size: 18px; z-index: 200; backdrop-filter: blur(10px);
+    }
+    #progressBar {
+      height: 10px; background: #333; border-radius: 5px; overflow: hidden; margin: 15px 0;
+    }
+    #progressFill { height: 100%; width: 0%; background: #ff5722; transition: width 0.4s; }
+    .hidden { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
   </style>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="info">
-    <h2>Motu Patlu 3D</h2>
-    <p>Drag → Rotate • Scroll → Zoom • Double-click → Reset</p>
-    <button id="colorBtn">Random Color</button>
+
+  <div id="progressContainer">
+    <h2>🌀 Loading Motu Patlu 3D...</h2>
+    <div id="progressBar"><div id="progressFill"></div></div>
+    <p id="loadText">Preparing awesomeness...</p>
   </div>
-  <div id="loading">Loading Motu Patlu...</div>
+
+  <div id="ui">
+    <div id="info">
+      <h2>🚀 Motu Patlu 3D</h2>
+      <p>Drag → Rotate • Pinch/Scroll → Zoom • Double-tap → Reset</p>
+    </div>
+    <div id="controls">
+      <button id="colorBtn">🎨 Random Color</button>
+      <button id="autoRotateBtn">🔄 Auto-Rotate: ON</button>
+      <button id="fullscreenBtn">⛶ Fullscreen</button>
+    </div>
+  </div>
 
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { FilmPass } from 'three/addons/postprocessing/FilmPass.js';
 
+    // Scene setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
 
-    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
-    camera.position.set(0, 1.3, 3.2);
+    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 1.5, 4);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-    dirLight.position.set(5, 10, 7);
+    // Post-processing
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.8, 0.4, 0.85);
+    composer.addPass(bloomPass);
+
+    const filmPass = new FilmPass(0.15, 0.025, 2048, false);
+    composer.addPass(filmPass);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 4);
+    dirLight.position.set(8, 12, 8);
     dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.camera.left = -10;
+    dirLight.shadow.camera.right = 10;
+    dirLight.shadow.camera.top = 10;
+    dirLight.shadow.camera.bottom = -10;
     scene.add(dirLight);
 
-    const ground = new THREE.Mesh(
-      new THREE.CircleGeometry(12, 64),
-      new THREE.MeshStandardMaterial({ color: 0xaaaaaa })
-    );
+    // HDR Environment (soft studio light)
+    new RGBELoader()
+      .setPath('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/files/envmaps/')
+      .load('royal_esplanade_1k.hdr', (texture) => {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        scene.environment = texture;
+        scene.background = new THREE.Color(0x87CEEB).lerp(texture, 0.3);
+      });
+
+    // Ground with reflection
+    const groundGeometry = new THREE.CircleGeometry(15, 64);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      color: 0x88aa88,
+      roughness: 0.8,
+      metalness: 0.2,
+      envMapIntensity: 1.0
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
+    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(0, 0.8, 0);
+    controls.dampingFactor = 0.07;
+    controls.target.set(0, 0.9, 0);
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.5;
+    controls.minDistance = 1.5;
+    controls.maxDistance = 10;
+    controls.maxPolarAngle = Math.PI / 2.2;
 
-    let motuPatlu;
-    let mixer;
+    // Variables
+    let motuPatlu, mixer;
     const clock = new THREE.Clock();
-    const loadingDiv = document.getElementById('loading');
+    const loadingDiv = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const loadText = document.getElementById('loadText');
 
+    // Load Model
     const loader = new GLTFLoader();
     loader.load(
-      './motu_patlu.glb',  // local path
+      './motu_patlu.glb',
       (gltf) => {
         motuPatlu = gltf.scene;
-        loadingDiv.style.display = 'none';
+        motuPatlu.visible = false;
 
         const box = new THREE.Box3().setFromObject(motuPatlu);
-        const scale = 3 / Math.max(...box.getSize(new THREE.Vector3()).toArray());
-        const finalScale = scale * 0.4;  // chhota size
+        const size = box.getSize(new THREE.Vector3());
+        const scale = 3.5 / Math.max(size.x, size.y, size.z);
+        const finalScale = scale * 0.45;
+
         motuPatlu.scale.setScalar(finalScale);
-        motuPatlu.position.y = -box.min.y * finalScale;
+        motuPatlu.position.y = -box.min.y * finalScale + 0.02;
 
-        if (gltf.animations && gltf.animations.length > 0) {
-          mixer = new THREE.AnimationMixer(motuPatlu);
-          mixer.clipAction(gltf.animations[0]).play();
-        }
-
-        motuPatlu.traverse((c) => {
-          if (c.isMesh) {
-            c.castShadow = true;
-            c.receiveShadow = true;
+        motuPatlu.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) {
+              child.material.envMapIntensity = 1.5;
+              child.material.roughness = 0.6;
+              child.material.metalness = 0.1;
+            }
           }
         });
 
+        if (gltf.animations && gltf.animations.length) {
+          mixer = new THREE.AnimationMixer(motuPatlu);
+          gltf.animations.forEach(clip => {
+            mixer.clipAction(clip).play();
+          });
+        }
+
         scene.add(motuPatlu);
-        console.log('Motu Patlu loaded successfully!');
+
+        // Fade in
+        motuPatlu.visible = true;
+        motuPatlu.traverse((c) => c.material && (c.material.transparent = true, c.material.opacity = 0));
+        gsap.to(motuPatlu.children.filter(c => c.isMesh).map(c => c.material), {
+          opacity: 1, duration: 1.5, ease: "power2.out",
+          onComplete: () => motuPatlu.traverse(c => c.material && (c.material.transparent = false))
+        });
+
+        loadingDiv.classList.add('hidden');
+        setTimeout(() => loadingDiv.remove(), 1000);
       },
       (progress) => {
-        console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+        const percent = (progress.loaded / progress.total) * 100;
+        progressFill.style.width = percent + '%';
+        loadText.textContent = `Loading Motu Patlu... ${Math.round(percent)}%`;
       },
       (error) => {
-        loadingDiv.innerHTML = 'Error loading model: ' + error.message;
-        console.error('GLB load error:', error);
+        loadText.textContent = "Failed to load model 😢";
+        console.error(error);
       }
     );
 
+    // UI Buttons
+    let autoRotate = true;
+    document.getElementById('autoRotateBtn').onclick = () => {
+      autoRotate = !autoRotate;
+      controls.autoRotate = autoRotate;
+      document.getElementById('autoRotateBtn').textContent = `🔄 Auto-Rotate: ${autoRotate ? 'ON' : 'OFF'}`;
+    };
+
     document.getElementById('colorBtn').onclick = () => {
-      if (!motuPatlu) return alert('Model load ho raha hai...');
+      if (!motuPatlu) return;
+      const colors = [0xff5733, 0x33ff57, 0x3357ff, 0xff33f1, 0xffff33, 0xff8c33, 0x33ffff];
       motuPatlu.traverse((c) => {
         if (c.isMesh && c.material) {
           const mats = Array.isArray(c.material) ? c.material : [c.material];
-          mats.forEach((m) => m.color?.setHex(Math.random() * 0xffffff));
+          mats.forEach(m => m.color?.setHex(colors[Math.floor(Math.random() * colors.length)]));
         }
       });
     };
 
+    document.getElementById('fullscreenBtn').onclick = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    // Double click = confetti + reset view
+    renderer.domElement.addEventListener('dblclick', () => {
+      controls.reset();
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+      }
+    });
+
+    // Animation loop
     function animate() {
       requestAnimationFrame(animate);
       const delta = clock.getDelta();
-
       if (mixer) mixer.update(delta);
 
       if (motuPatlu) {
-        motuPatlu.rotation.y += 0.005;
-        motuPatlu.position.y += Math.sin(Date.now() * 0.003) * 0.01;
+        motuPatlu.rotation.y += 0.004;
+        motuPatlu.position.y += Math.sin(Date.now() * 0.002) * 0.008;
       }
 
       controls.update();
-      renderer.render(scene, camera);
+      composer.render();
     }
     animate();
 
-    window.onresize = () => {
+    // Resize
+    window.addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
-    };
+      composer.setSize(innerWidth, innerHeight);
+    });
+
+    // Add GSAP for fade-in
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js';
+    document.head.appendChild(script);
+
+    // Add confetti
+    const confettiScript = document.createElement('script');
+    confettiScript.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js';
+    document.head.appendChild(confettiScript);
   </script>
 </body>
 </html>
